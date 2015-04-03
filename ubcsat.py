@@ -22,9 +22,6 @@ class Solver():
     def _write_wcnf(self, file):
         top = sum(w for w, _ in self._soft_clauses) + 1
 
-        sys.stdout.write("p wcnf %d %d %d\n" % (self._nvar, len(self._clauses) + len(self._soft_clauses), top))
-        sys.stdout.flush()
-
         file.write("p wcnf %d %d %d\n" % (self._nvar, len(self._clauses) + len(self._soft_clauses), top))
         for clause in self._clauses:
             file.write(str(top))
