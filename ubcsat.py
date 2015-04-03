@@ -1,7 +1,6 @@
 import re
 import subprocess
 import sys
-import tempfile
 
 class Solver():
     def __init__(self, ubcsat = "ubcsat"):
@@ -44,24 +43,23 @@ class Solver():
         return top
 
     def run(self):
-        with tempfile.NamedTemporaryFile(suffix = "wcnf") as f:
-            top = self._write_wcnf(f)
-            cmd = [self._ubcsat, "-w", "-alg", "irots", "-seed", "0", "-runs", "10", "-solve", "-r", "bestsol", "-inst", f.name]
-            popen = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
-            popen.stdin.close()
-            try:
-                for line in popen.stdout:
-                    sys.stdout.write(line)
-                    sys.stdout.flush()
-                    m = re.match(r"^\d+ [01] (\d+) ([01]+)$", line)
-                    if m:
-                        obj, model = m.groups()
-                        obj = int(obj)
-                        if obj < top:
-                            model = [None] + [c=='1' for c in model]
-                            yield (obj, model)
-            finally:
-                popen.terminate()
+        cmd = [self._ubcsat, "-w", "-alg", "irots", "-seed", "0", "-runs", "10", "-solve", "-r", "bestsol"]
+        popen = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+
+        top = self._write_wcnf(popen.stdin)
+        try:
+            for line in popen.stdout:
+                sys.stdout.write(line)
+                sys.stdout.flush()
+                m = re.match(r"^\d+ [01] (\d+) ([01]+)$", line)
+                if m:
+                    obj, model = m.groups()
+                    obj = int(obj)
+                    if obj < top:
+                        model = [None] + [c=='1' for c in model]
+                        yield (obj, model)
+        finally:
+            popen.terminate()
 
     def optimize(self):
         bestobj = None
